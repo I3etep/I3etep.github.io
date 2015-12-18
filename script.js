@@ -13,7 +13,7 @@ var ChanceOfNewFields = 50;
 var ChanceOfDecreaseSize =200;
 var y= 0;
 var x= 0;
-var level ;
+var level =1 ;
 var status = -1; // -1: stopped  , 0 In play    
 var playerImage = new Image(); 
 playerImage.src = "player.png";
@@ -118,7 +118,7 @@ function animate() {
         //player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2+y;
         
         //CHECK
-        check(player,fields);
+        check();
         
         /*
         if(mousePos !== undefined) {
@@ -135,7 +135,32 @@ function animate() {
 }
 }
 ////////////////////////////////////////
-
+function levelup(){
+ level++;
+ basicChanceAppearance = 200;
+ ChanceOfNewFields = 50;
+ ChanceOfDecreaseSize =200;
+ y= 0;
+ x= 0;
+ fps = 15;
+ cols++;
+ rows++;
+ fields = new Array(cols);
+for (var i = 0; i < cols; i++){
+        fields[i]= new Array(rows);
+    for (var j = 0; j < rows; j++){
+        fields[i][j]= new Field();
+        //console.log(fields[i][j].size);
+    }}
+ player.x =  canvas.width/cols/2-player.width/2;
+ player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2;
+ backg_x = canvas.width/cols/2+canvas.width/cols*(cols-1)+x-10;
+ backg_y = canvas.height/rows/2+y-10;
+ 
+ fieldsInit(fields);
+ drawPlayer(player.x,player.y);
+ start();
+}
 function fieldsInit(fields){
     for (var i = 0; i < cols; i++){
         for (var j = 0; j < rows; j++){
@@ -216,18 +241,23 @@ playerImage.onload = function () {
 context.restore();
     
 }
-function check(player,fields){
+function check(){
     //check win
-    if (player.x===backg_x && player.y===backg_y ){
+    if (Math.floor(player.x)===Math.floor(backg_x) && Math.floor(player.y)===Math.floor(backg_y) ){
         drawText("You Win!");
+        alert("click for nex level");
+        levelup();
     //document.write("OK");
     }
     
        
      var a= Math.floor(player.x/(canvas.width/cols));
      var b= Math.floor(player.y/(canvas.height/rows));
-    
-    if (fields[a][b].size===0) drawText("Game Over");
+    console.log("pX:"+player.x+"; pY"+player.y+" bX:"+backg_x+"bY"+backg_y);
+    if (fields[a][b].size===0) {
+        drawText("Game Over");
+        stop();
+    }
     
 }
 function start() {
