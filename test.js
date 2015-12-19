@@ -1,52 +1,29 @@
-// TODO animation on death
 
-
-
+//Global Variables can be accessed from inside or outside of any function or method,
+//they are generally frowned upon but are used a lot in games.
 //window.addEventListener('resize', resizeGame, false);
 //window.addEventListener('orientationchange', resizeGame, false);
-resizeGame();
-var lives =3;
-var onDeath = 0; //0:next level, -1: -1 live;
-var n=0;
+//resizeGame();
+var rad;
 var stopped = true;
 var mousePos;
-var basicChanceAppearance = 400; //(0..1000)
-var ChanceOfNewFields = 30;    // (0..10000)
-var ChanceOfDecreaseSize = 30; //(0..10000)
-var y = 0;
-var x = 0;
-var level = 1 ;
+var basicChanceAppearance = 200;
+var ChanceOfNewFields = 50;
+var ChanceOfDecreaseSize =200;
+var y= 0;
+var x= 0;
+var level =1 ;
 var playerImage = new Image();
 playerImage.src = "player.png";
 var exit= new Image();
 exit.src = "exit.png";
-var bg= new Image();
-bg.src = "boloto.jpg";
 var fps = 15;
 var requestId;
 var gameArea,canvas, context;
 var cols = 5;
 var rows = 5;
 
-var bulk = "bulk";
-var eat = "eat";
-var plyuh = "plyuh";
-var gameover = "gameover";
 
-loadSound ();
-
-
-function loadSound (){
-    createjs.Sound.registerSound("bulk.mp3", bulk);
-    createjs.Sound.registerSound("eat.mp3", eat);
-    createjs.Sound.registerSound("plyuh.mp3", plyuh);
-    createjs.Sound.registerSound("gameover.mp3", gameover);
-
-}
-
-function playSound (x) {
-    createjs.Sound.play(x);
-}
 function sprite (options) {
 
     var that = {};
@@ -78,8 +55,8 @@ for (var i = 0; i < cols; i++){
         fields[i][j]= new Field();
         //console.log(fields[i][j].size);
     }}
+/////////////////////////////////////////
 
-window.onload = start();
 init();
 
 
@@ -91,12 +68,12 @@ var player = sprite({
     height: 20,
     image: playerImage
 });
-var FieldRadius = Math.min(canvas.width/cols,canvas.height/rows)*0.45;
+
 var backg_x = canvas.width/cols/2+canvas.width/cols*(cols-1)+x-10;
 var backg_y = canvas.height/rows/2+y-10;
 player.x =  canvas.width/cols/2-player.width/2;
 player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2;
-drawBG(0,0);
+
 fieldsInit(fields);
 drawPlayer(player.x,player.y);
 
@@ -105,8 +82,9 @@ drawPlayer(player.x,player.y);
 function init() {
     gameArea = document.getElementById('gameArea');
     canvas = document.getElementById('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
     context = canvas.getContext( '2d' );
-
 
 
     canvas.addEventListener('mousemove', handleMousemove, false);
@@ -114,40 +92,40 @@ function init() {
     canvas.addEventListener('mouseup', handleMouseup, false);
     window.addEventListener('keydown', handleKeydown, false);
     window.addEventListener('keyup', handleKeyup, false);
-
+    //requestId = requestAnimationFrame(animate);
 
 }
-
+////////////////////////////////////////
 
 function animate() {
     if (!stopped) {
         setTimeout(function() {
-
-
-
-
             //CLEAR
-            context.save();
-            context.rect(0, 0, canvas.width,canvas.height)
-            context.fillStyle = "#e5ffe5";
-            context.fill();
-            context.restore();
-            //DRAW
+            context.clearRect(0, 0, canvas.width,canvas.height);
 
+            //DRAW
             fieldsDraw(fields);
             context.drawImage(player.image, player.x, player.y,player.width,player.height);
             context.drawImage(exit, backg_x, backg_y);
-
-
-            drawText("Lives "+lives+" Level "+level,canvas.width/2,canvas.height);
-
+            //drawPlayer(x,y);
+            //drawPlayer(player.x,player,y);
             //MOVE
-
+            //console.log(player.x+";"+player.y+";"+x+";"+y);
+            //drawPlayer(x,y);
+            //player.x =  canvas.width/cols/2-player.width/2+x;
+            //player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2+y;
+            document.getElementById("statsPanel").innerHTML="Hello"
 
             //CHECK
             check();
-            if (lives===0){stop()};
 
+            /*
+             if(mousePos !== undefined) {
+             player.x = mousePos.x;
+             player.y = mousePos.y;
+             console.log(mousePos.x);
+             }
+             */
 
 
 
@@ -155,32 +133,24 @@ function animate() {
         }, 1000 / fps);
     }
 }
-
-function nextlevel(onDeath){
-    if (onDeath===0){
-        n++;
-        cols++;
-        rows++;
-        level+=1;
-        basicChanceAppearance -=n*15;
-        ChanceOfNewFields -=n;
-        ChanceOfDecreaseSize +=n;
-    }
-
-
-
+////////////////////////////////////////
+function levelup(){
+    level++;
+    basicChanceAppearance = 200;
+    ChanceOfNewFields = 50;
+    ChanceOfDecreaseSize =200;
     y= 0;
     x= 0;
     fps = 15;
-
+    cols++;
+    rows++;
     fields = new Array(cols);
     for (var i = 0; i < cols; i++){
         fields[i]= new Array(rows);
         for (var j = 0; j < rows; j++){
             fields[i][j]= new Field();
-
+            //console.log(fields[i][j].size);
         }}
-    FieldRadius = Math.min(canvas.width/cols,canvas.height/rows)*0.45;
     player.x =  canvas.width/cols/2-player.width/2;
     player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2;
     backg_x = canvas.width/cols/2+canvas.width/cols*(cols-1)+x-10;
@@ -195,13 +165,17 @@ function fieldsInit(fields){
         for (var j = 0; j < rows; j++){
             var r = randomInteger(0, 1000);
             if ( ((i===0) && (j===(rows-1))) || ((i===(cols-1))&& (j===0))){
-                fields[i][j].draw(i,j,FieldRadius);
+                rad = 25;
+                fields[i][j].draw(i,j,rad);
             }
             else if (r<basicChanceAppearance){
-                fields[i][j].draw(i,j,FieldRadius);
+                rad = 25;
+                fields[i][j].draw(i,j,rad);
             }
             else
-                fields[i][j].draw(i,j,0);
+                rad=0;
+            fields[i][j].draw(i,j,rad);
+            //console.log("fields["+i+"]["+j+"]="+fields[i][j].size);
             context.fill();
             context.stroke();
         }
@@ -213,43 +187,52 @@ function fieldsDraw(fields){
     for (var i = 0; i < cols; i++){
         for (var j = 0; j < rows; j++){
             var r = randomInteger(0, 10000);
+            //console.log("before:"+fields[0][1].size);
 //exit field
             if ( (i===(cols-1)) && (j===0)){
-                fields[i][j].draw(i,j,FieldRadius);
+                rad = 25;
+                fields[i][j].draw(i,j,rad);
             }
 //new field
             else if (fields[i][j].size===0 && r<ChanceOfNewFields)  {
-                fields[i][j].draw(i,j,FieldRadius);
+                rad = 25;
+                fields[i][j].draw(i,j,rad);
             }
 //decrease size
             else if (r<ChanceOfDecreaseSize && fields[i][j].size>0) {
-                if (fields[i][j].size<FieldRadius*0.2 ){
-                    var rad =0;
-                    playSound ("bulk");
-                }
-                else {
-                    var rad = fields[i][j].size - FieldRadius * 0.2;
-                }
+                rad = fields[i][j].size-5 ;
                 fields[i][j].draw(i,j,rad);
             }
+//safe current state
             else
-                fields[i][j].draw(i,j,fields[i][j].size);
+                rad = fields[i][j].size ;
+            fields[i][j].draw(i,j,rad);
+            //console.log("fields["+i+"]["+j+"]="+fields.size);
             context.fill();
             context.stroke();
         }
     }
 }
-
-function drawBG(x,y){
-    context.save();
-    playerImage.onload = function () {
-        context.drawImage(bg,x,y);
-    };
-    context.restore();
-
-
+function draw() {
+    player.x =  canvas.width/cols/2-player.width/2+x;
+    player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2+y;
+//console.log(destX+";"+destY+"  "+"bx"+backg_x+";by "+backg_y);
+    context.drawImage(exit, backg_x, backg_y);
+    context.drawImage(player.image, player.x, player.y,player.width,player.height);
+    ///
+    check(player,fields);
 }
+//////////////////////////////////////////////////////////////////////////////
+
 function drawPlayer(x,y){
+//player.x =  canvas.width/cols/2-player.width/2+x;
+//player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2+y;
+
+//context.drawImage(exit, backg_x, backg_y);
+//context.drawImage(player.image, player.x, player.y,player.width,player.height);
+    ///
+//check(player,fields);
+
     context.save();
     playerImage.onload = function () {
         context.drawImage(player.image,x,y,player.width,player.height);
@@ -260,35 +243,24 @@ function drawPlayer(x,y){
 function check(){
     //check win
     if (Math.floor(player.x)===Math.floor(backg_x) && Math.floor(player.y)===Math.floor(backg_y) ){
-        playSound (eat);
-        drawText("Congratulations!",canvas.width/2,canvas.height/2);
-
-        alert("click for next level");
-        onDeath = 0;
-        nextlevel(onDeath);
+        drawText("You Win!");
+        alert("click for nex level");
+        levelup();
+        //document.write("OK");
     }
 
 
     var a= Math.floor(player.x/(canvas.width/cols));
     var b= Math.floor(player.y/(canvas.height/rows));
-    if (fields[a][b].size===0 && lives===1) {
-        playSound(gameover);
-        drawText("Game Over",canvas.width/2,canvas.height/2);
-        stop();
+    console.log("pX:"+player.x+"; pY"+player.y+" bX:"+backg_x+"bY"+backg_y);
+    if (fields[a][b].size===0) {
+        drawText("Game Over");
+        //stop();
     }
-    else  if (fields[a][b].size===0 && lives!==1){
-        playSound(plyuh);
-        lives--;
-        onDeath = -1;
-        drawText("-1 live",canvas.width/2,canvas.height/2);
-        nextlevel(onDeath);
-
-    }
-
-
 
 }
 function start() {
+    // Start the animation loop, targets 60 frames/s
     requestId = requestAnimationFrame(animate);
     stopped = false;
 }
@@ -310,12 +282,10 @@ function resizeGame() {
         newWidth = newHeight * widthToHeight;
         gameArea.style.height = newHeight + 'px';
         gameArea.style.width = newWidth + 'px';
-
     } else {
         newHeight = newWidth / widthToHeight;
         gameArea.style.width = newWidth + 'px';
         gameArea.style.height = newHeight + 'px';
-
     }
 
     gameArea.style.marginTop = (-newHeight / 2) + 'px';
@@ -332,7 +302,17 @@ function randomInteger(min, max) {
     return rand;
 }
 
+
+function writeMessage(canvas, message) {
+    context.save();
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.font = '18pt Calibri';
+    context.fillStyle = 'black';
+    context.fillText(message, 10, 25);
+    context.restore();
+}
 function handleMousemove(evt) {
+    // The mousePos will be taken into account in the animationLoop
     mousePos = getMousePos(canvas, evt);
 }
 
@@ -341,6 +321,7 @@ function handleMousedown(evt) {
     var mb= Math.floor(mousePos.y/(canvas.height/rows));
     var pa= Math.floor(player.x/(canvas.width/cols));
     var pb= Math.floor(player.y/(canvas.height/rows));
+    //console.log("p="+pa+";m="+ma);
     if (ma-pa===-1 && mb===pb && (player.x>=canvas.width/cols) ) {
         player.x-=canvas.width/cols;
     }
@@ -350,9 +331,9 @@ function handleMousedown(evt) {
     else if (mb-pb===-1 && ma===pa && (player.y>canvas.height/rows) ) {
         player.y-=canvas.height/rows;
     }
-    else if (mb-pb===1 && ma===pa && (player.y<canvas.height/rows*(rows-1)) ) {
-        player.y+=canvas.height/rows;
-    }
+    else if (mb-pb===1 && ma===pa && (player.y<canvas.height/rows*(rows-1)) ) player.y+=canvas.height/rows;
+
+
 }
 
 function handleMouseup(evt) {
@@ -360,6 +341,7 @@ function handleMouseup(evt) {
 }
 
 function getMousePos(canvas, evt) {
+    // necessary to take into account CSS boudaries
     var rect = canvas.getBoundingClientRect();
     return {
         x: evt.clientX - rect.left,
@@ -374,18 +356,22 @@ function handleKeydown(e) {
             case 37: //left
                 if (player.x>=canvas.width/cols)
                     player.x-=canvas.width/cols;
+                //console.log("X="+player.x+"; Y="+player.y+" bX="+backg_x+"; bY="+backg_y);
                 break;
             case 39://right
                 if (player.x<canvas.width/cols*(cols-1))
                     player.x+=canvas.width/cols;
+                //console.log("X="+player.x+"; Y="+player.y+" bX="+backg_x+"; bY="+backg_y);
                 break;
             case 38: //up
                 if (player.y>canvas.height/rows)
                     player.y-=canvas.height/rows;
+                //console.log("X="+player.x+"; Y="+player.y+" bX="+backg_x+"; bY="+backg_y);
                 break;
             case 40://down
                 if(player.y<canvas.height/rows*(rows-1))
                     player.y+=canvas.height/rows;
+                //console.log("X="+player.x+"; Y="+player.y+" bX="+backg_x+"; bY="+backg_y);
                 break;
         }
     }
@@ -394,9 +380,10 @@ function handleKeyup(evt) {
     incrementX = 0;
 }
 
-function drawText(text,x,y){
+
+function drawText(text){
     context.save();
-    context.translate(x, y);
+    context.translate(canvas.width/2, canvas.height/2);
 
     context.font = "bold 60px Verdana";
 
@@ -410,4 +397,6 @@ function drawText(text,x,y){
     context.textAlign="center";
     context.fillText(text, 0, 0);
     context.restore();
-}
+}/**
+ * Created by KOS on 18.12.2015.
+ */
