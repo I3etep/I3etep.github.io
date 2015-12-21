@@ -1,10 +1,53 @@
-// TODO animation on death
+//TODO start menu
+//TODO replay button
 
 
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+            || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+                timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
+
+function menu(){
+
+    var menu = document.createElement("div");
+    menu.style.width = ""+canvas.width+" px";
+    menu.style.height = canvas.height;
+    menu.style.background = "red";
+    menu.style.color = "white";
+    menu.style.position = "absolute";
+    menu.style.top = "50%";
+    menu.style.left = "50%";
+    menu.style.marginTop = -canvas.width/2;
+    menu.style.marginLeft = -canvas.height/2;
+    //menu.style.padding = "auto 0 "
+    menu.innerHTML = "Hello";
+    document.body.appendChild(menu);
+}
 //window.addEventListener('resize', resizeGame, false);
 //window.addEventListener('orientationchange', resizeGame, false);
 resizeGame();
+
 var lives =3;
 var onDeath = 0; //0:next level, -1: -1 live;
 var n=0;
@@ -17,11 +60,11 @@ var y = 0;
 var x = 0;
 var level = 1 ;
 var playerImage = new Image();
-playerImage.src = "player.png";
+playerImage.src = "pl.png";
+//playerImage.src = "player.png";
 var exit= new Image();
 exit.src = "exit.png";
-var bg= new Image();
-bg.src = "boloto.jpg";
+
 var fps = 15;
 var requestId;
 var gameArea,canvas, context;
@@ -36,28 +79,61 @@ var gameover = "gameover";
 loadSound ();
 
 
-function loadSound (){
-    createjs.Sound.registerSound("bulk.mp3", bulk);
-    createjs.Sound.registerSound("eat.mp3", eat);
-    createjs.Sound.registerSound("plyuh.mp3", plyuh);
-    createjs.Sound.registerSound("gameover.mp3", gameover);
 
-}
-
-function playSound (x) {
-    createjs.Sound.play(x);
-}
 function sprite (options) {
 
-    var that = {};
+    var that = {},
+        //frameIndex = 0,
 
+        tickCount = 0,
+        ticksPerFrame = options.ticksPerFrame || 0,
+        numberOfFrames = options.numberOfFrames || 1;
+    that.frameIndex = options.frameIndex;
     that.context = options.context;
     that.width = options.width;
     that.height = options.height;
     that.image = options.image;
 
+    that.update = function () {
+
+        tickCount += 1;
+
+        if (tickCount > ticksPerFrame) {
+
+            tickCount = 0;
+
+            // If the current frame index is in range
+            if (that.frameIndex < numberOfFrames - 1) {
+                // Go to the next frame
+                that.frameIndex += 1;
+            } else {
+                that.frameIndex = 0;
+            }
+        }
+    };
+
+    that.render = function () {
+
+        // Clear the canvas
+        //that.context.clearRect(0, 0, that.width, that.height);
+
+        // Draw the animation
+        that.context.drawImage(
+            that.image,
+            that.frameIndex * that.width / numberOfFrames,
+            0,
+            that.width / numberOfFrames,
+            that.height,
+            player.x,
+            player.y,
+            that.width / numberOfFrames,
+            that.height);
+
+    };
+
     return that;
 }
+
 
 
 function  Field() {
@@ -81,22 +157,28 @@ for (var i = 0; i < cols; i++){
 
 window.onload = start();
 init();
-
+//menu();
 
 var player = sprite({
-    context: context,
-    x:0,
-    y:0,
-    width: 20,
+    context: canvas.getContext("2d"),
+    width: 100,
     height: 20,
-    image: playerImage
+    image: playerImage,
+    numberOfFrames: 5,
+    ticksPerFrame: 0,
+    frameIndex:0
 });
 var FieldRadius = Math.min(canvas.width/cols,canvas.height/rows)*0.45;
 var backg_x = canvas.width/cols/2+canvas.width/cols*(cols-1)+x-10;
 var backg_y = canvas.height/rows/2+y-10;
-player.x =  canvas.width/cols/2-player.width/2;
+player.numberOfFrames= 5;
+player.ticksPerFrame= 4;
+player.x =  canvas.width/cols/2-player.width/player.numberOfFrames/2;
 player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2;
+player.utonul=false;
+
 drawBG(0,0);
+
 fieldsInit(fields);
 drawPlayer(player.x,player.y);
 
@@ -118,6 +200,16 @@ function init() {
 
 }
 
+function animate2() {
+    if (!stopped) {
+        setTimeout(function() {
+
+            requestId = requestAnimationFrame(animate);
+        }, 1000 / fps);
+    }
+}
+
+
 
 function animate() {
     if (!stopped) {
@@ -132,21 +224,91 @@ function animate() {
             context.fillStyle = "#e5ffe5";
             context.fill();
             context.restore();
+
+
+
+
+            ////////////////////////////////////////////////////////////
             //DRAW
 
             fieldsDraw(fields);
-            context.drawImage(player.image, player.x, player.y,player.width,player.height);
+            //context.drawImage(player.image, player.x, player.y,player.width,player.height);
+
+            //lives
+            for (var i=0;i<lives;i++) {
+                context.drawImage(player.image, 0, 0, player.width/player.numberOfFrames, player.height, player.width/player.numberOfFrames*(1.5 * i+1), 0, player.width/player.numberOfFrames, player.height);
+            }
+            //exit
             context.drawImage(exit, backg_x, backg_y);
+            //label
+            drawText("Level "+level,canvas.width,0,"right","bold 4vmin Comic Sans MS","top");
+
+            //if (player.frameIndex!==0) player.utonul=false;
+
+            //if (player.utonul && player.frameIndex===4) stop();//player.update();
 
 
-            drawText("Lives "+lives+" Level "+level,canvas.width/2,canvas.height);
 
+            player.render();
+            //drawPlayer(10,10);
             //MOVE
 
 
             //CHECK
-            check();
-            if (lives===0){stop()};
+            //check();
+            if (!player.utonul) {
+
+                if (Math.floor(player.x) === Math.floor(backg_x) && Math.floor(player.y) === Math.floor(backg_y)) {
+                    playSound(eat);
+                    drawText("Congratulations!", canvas.width / 2, canvas.height / 2, "center","bold 14vmin Comic Sans MS","center");
+
+                    alert("click for next level");
+                    onDeath = 0;
+                    nextlevel(onDeath);
+                }
+
+
+                var a = Math.floor(player.x / (canvas.width / cols));
+                var b = Math.floor(player.y / (canvas.height / rows));
+                if (fields[a][b].size === 0 && lives === 1) {
+                    lives--;
+                    /*
+                    playSound(gameover);
+                    drawText("GAME OVER", canvas.width / 2, canvas.height / 2, "center","bold 14vmin Comic Sans MS","center");
+                    stop();
+                    */
+                }
+                else if (fields[a][b].size === 0 && lives !== 1) {
+                    playSound(plyuh);
+                    lives--;
+                    onDeath = -1;
+                    console.log("0");
+                    player.utonul = true;
+                    //drawText("-1 live",canvas.width/2,canvas.height/2);
+
+                }
+            }
+
+            else if (player.utonul) {
+                if (lives < 1) {
+                    player.update();
+                    if (player.frameIndex === 4) {
+                        playSound(gameover);
+                        drawText("GAME OVER", canvas.width / 2, canvas.height / 2, "center", "bold 14vmin Comic Sans MS", "center");
+                        stop();
+                    }
+                }
+                    if (lives > 0) {
+                        player.update();
+                        if (player.frameIndex === 4) {
+                            player.utonul = false;
+                            player.frameIndex = 0;
+                            nextlevel(onDeath);
+                        }
+                    }
+
+            }
+            //if (lives===0){stop()};
 
 
 
@@ -155,6 +317,7 @@ function animate() {
         }, 1000 / fps);
     }
 }
+
 
 function nextlevel(onDeath){
     if (onDeath===0){
@@ -181,14 +344,14 @@ function nextlevel(onDeath){
 
         }}
     FieldRadius = Math.min(canvas.width/cols,canvas.height/rows)*0.45;
-    player.x =  canvas.width/cols/2-player.width/2;
+    player.x =  canvas.width/cols/2-player.width/player.numberOfFrames/2;
     player.y =  canvas.height/rows/2+canvas.height/rows*(rows-1)-player.height/2;
     backg_x = canvas.width/cols/2+canvas.width/cols*(cols-1)+x-10;
     backg_y = canvas.height/rows/2+y-10;
-
+    //player.frameIndex===1;
     fieldsInit(fields);
     drawPlayer(player.x,player.y);
-    start();
+    //start();
 }
 function fieldsInit(fields){
     for (var i = 0; i < cols; i++){
@@ -206,7 +369,9 @@ function fieldsInit(fields){
             context.stroke();
         }
     }
-    context.drawImage(player.image,50, 56,20,20);
+    //context.drawImage(player.image,50, 56,20,20);
+    player.render();
+    //stop();
 }
 
 function fieldsDraw(fields){
@@ -259,31 +424,7 @@ function drawPlayer(x,y){
 }
 function check(){
     //check win
-    if (Math.floor(player.x)===Math.floor(backg_x) && Math.floor(player.y)===Math.floor(backg_y) ){
-        playSound (eat);
-        drawText("Congratulations!",canvas.width/2,canvas.height/2);
 
-        alert("click for next level");
-        onDeath = 0;
-        nextlevel(onDeath);
-    }
-
-
-    var a= Math.floor(player.x/(canvas.width/cols));
-    var b= Math.floor(player.y/(canvas.height/rows));
-    if (fields[a][b].size===0 && lives===1) {
-        playSound(gameover);
-        drawText("Game Over",canvas.width/2,canvas.height/2);
-        stop();
-    }
-    else  if (fields[a][b].size===0 && lives!==1){
-        playSound(plyuh);
-        lives--;
-        onDeath = -1;
-        drawText("-1 live",canvas.width/2,canvas.height/2);
-        nextlevel(onDeath);
-
-    }
 
 
 
@@ -394,11 +535,11 @@ function handleKeyup(evt) {
     incrementX = 0;
 }
 
-function drawText(text,x,y){
+function drawText(text,x,y,align,font,baseline){
     context.save();
     context.translate(x, y);
 
-    context.font = "bold 60px Verdana";
+    context.font = font;
 
 // Create gradient
     var gradient = context.createLinearGradient(0, 0, canvas.width, 0);
@@ -406,8 +547,34 @@ function drawText(text,x,y){
     gradient.addColorStop("0.5", "#66CC00");
     gradient.addColorStop("1.0", "#66CC33");
 // Fill with gradient
+    context.textAlign = align;
+    context.textBaseline = baseline;
     context.fillStyle = gradient;
-    context.textAlign="center";
     context.fillText(text, 0, 0);
     context.restore();
+}
+
+function loadSound (){
+    createjs.Sound.registerSound("bulk.mp3", bulk);
+    createjs.Sound.registerSound("eat.mp3", eat);
+    createjs.Sound.registerSound("plyuh.mp3", plyuh);
+    createjs.Sound.registerSound("gameover.mp3", gameover);
+
+}
+
+function playSound (x) {
+    createjs.Sound.play(x);
+}
+function drawLives(){
+    for (var i=0;i<lives;i++){
+        drawPlayer(canvas.width/2+10*i,canvas.height/2 );
+
+        context.save();
+        playerImage.onload = function () {
+            context.drawImage(player.image,x,y,player.width,player.height);
+        };
+        context.restore();
+
+    }
+
 }
